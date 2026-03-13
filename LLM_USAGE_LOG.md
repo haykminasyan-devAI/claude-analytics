@@ -271,16 +271,3 @@ The prompts below reflect real conversations, including follow-ups and debugging
 
 **What I validated:** Re-ran the dashboard after the fix, confirmed the import error was gone, and that the anomaly tab loaded correctly.
 
----
-
-### 19 — Documentation
-
-**My prompt:**
-> *"How should I write a README for a data engineering project? What sections should it have? I want to include something visual like an architecture diagram."*
-
-**Follow-up:**
-> *"For the LLM usage log — should I paste the exact technical prompts I used or write them more naturally the way I actually thought about the problems?"*
-
-**What I built:** `README.md` with project overview, ASCII architecture diagram, setup instructions, run commands, API table, dashboard features table, and this LLM log as a separate file.
-
-**What I validated:** Followed the setup instructions from scratch in a clean terminal session to confirm they work end-to-end. Had a colleague read the README and flag anything unclear.
