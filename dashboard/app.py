@@ -443,10 +443,14 @@ with tab1:
             )
             fig_practice.update_traces(textposition="outside", textfont_color="#CBD5E1")
             fig_practice.update_layout(
-                **CHART_LAYOUT, height=340,
+                **CHART_LAYOUT, height=380,
                 coloraxis_showscale=False,
                 yaxis=dict(categoryorder="total ascending", gridcolor="rgba(255,255,255,0.04)"),
-                xaxis=dict(title="Cost (USD)", gridcolor="rgba(255,255,255,0.04)"),
+                xaxis=dict(
+                    title="Cost (USD)",
+                    gridcolor="rgba(255,255,255,0.04)",
+                    range=[0, practice_df["total_cost"].max() * 1.35],
+                ),
             )
             st.plotly_chart(fig_practice, use_container_width=True)
 
@@ -482,14 +486,74 @@ with tab2:
     top_users_df = get_top_users(n=15, date_from=date_from_str, date_to=date_to_str)
 
     if not top_users_df.empty:
-        display_df = top_users_df.copy()
-        display_df["total_cost"]   = display_df["total_cost"].apply(lambda x: f"${x:,.4f}")
-        display_df["total_tokens"] = display_df["total_tokens"].apply(lambda x: f"{int(x):,}")
-        display_df.columns = [
-            "Email", "Name", "Practice", "Level", "Location",
-            "Total Cost", "Sessions", "Total Tokens", "API Calls",
-        ]
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        PRACTICE_BADGE = {
+            "ML Engineering":       ("#7C3AED", "#EDE9FE"),
+            "Frontend Engineering": ("#0891B2", "#CFFAFE"),
+            "Backend Engineering":  ("#059669", "#D1FAE5"),
+            "DevOps":               ("#D97706", "#FEF3C7"),
+            "Platform Engineering": ("#E11D48", "#FFE4E6"),
+            "Data Engineering":     ("#EA580C", "#FFEDD5"),
+        }
+        LEVEL_BADGE = {
+            "Junior":   ("#6EE7B7", "#064E3B"),
+            "Mid":      ("#93C5FD", "#1E3A5F"),
+            "Senior":   ("#C4B5FD", "#2E1065"),
+            "Lead":     ("#FCD34D", "#78350F"),
+            "Director": ("#F9A8D4", "#831843"),
+        }
+
+        rows_html = ""
+        for i, row in enumerate(top_users_df.itertuples(index=False)):
+            practice     = str(row[2]) if len(row) > 2 else ""
+            level        = str(row[3]) if len(row) > 3 else ""
+            p_bg, p_txt  = PRACTICE_BADGE.get(practice, ("#475569", "#E2E8F0"))
+            l_bg, l_txt  = LEVEL_BADGE.get(level, ("#475569", "#1E293B"))
+            row_bg = "rgba(255,255,255,0.04)" if i % 2 == 0 else "rgba(255,255,255,0.01)"
+            rows_html += f"""
+            <tr style="background:{row_bg}; transition: background .15s;">
+                <td style="color:#94A3B8; font-size:0.73rem; padding:8px 10px;">{row[0]}</td>
+                <td style="color:#F1F5F9; font-weight:600; padding:8px 10px;">{row[1]}</td>
+                <td style="padding:8px 10px;">
+                    <span style="background:{p_bg}22; color:{p_bg}; border:1px solid {p_bg}55;
+                                 border-radius:20px; padding:2px 9px; font-size:0.72rem; font-weight:600;">
+                        {practice}
+                    </span>
+                </td>
+                <td style="padding:8px 10px;">
+                    <span style="background:{l_bg}; color:{l_txt};
+                                 border-radius:20px; padding:2px 9px; font-size:0.72rem; font-weight:700;">
+                        {level}
+                    </span>
+                </td>
+                <td style="color:#94A3B8; font-size:0.78rem; padding:8px 10px;">{row[4]}</td>
+                <td style="color:#34D399; font-weight:700; padding:8px 10px;">${row[5]:,.4f}</td>
+                <td style="color:#A5B4FC; padding:8px 10px;">{int(row[6]):,}</td>
+                <td style="color:#CBD5E1; padding:8px 10px;">{int(row[7]):,}</td>
+                <td style="color:#CBD5E1; padding:8px 10px;">{int(row[8]):,}</td>
+            </tr>"""
+
+        st.markdown(f"""
+        <div style="overflow-x:auto; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
+        <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
+            <thead>
+                <tr style="background:linear-gradient(90deg,#2E1065,#1E3A5F);
+                            color:#A78BFA; font-size:0.73rem; text-transform:uppercase;
+                            letter-spacing:.06em;">
+                    <th style="padding:11px 10px; text-align:left;">Email</th>
+                    <th style="padding:11px 10px; text-align:left;">Name</th>
+                    <th style="padding:11px 10px; text-align:left;">Practice</th>
+                    <th style="padding:11px 10px; text-align:left;">Level</th>
+                    <th style="padding:11px 10px; text-align:left;">Location</th>
+                    <th style="padding:11px 10px; text-align:left;">Total Cost</th>
+                    <th style="padding:11px 10px; text-align:left;">Sessions</th>
+                    <th style="padding:11px 10px; text-align:left;">Tokens</th>
+                    <th style="padding:11px 10px; text-align:left;">API Calls</th>
+                </tr>
+            </thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown('<hr class="fancy-divider">', unsafe_allow_html=True)
 
@@ -552,10 +616,13 @@ with tab3:
             )
             fig_tool.update_traces(textposition="outside", textfont_color="#CBD5E1")
             fig_tool.update_layout(
-                **CHART_LAYOUT, height=360,
+                **CHART_LAYOUT, height=420,
                 coloraxis_showscale=False,
                 xaxis=dict(tickangle=-35, title="Tool"),
-                yaxis=dict(title="Total Calls"),
+                yaxis=dict(
+                    title="Total Calls",
+                    range=[0, tool_df["total_calls"].max() * 1.3],
+                ),
                 title=dict(text="Total Calls per Tool", font=dict(color="#CBD5E1", size=13)),
             )
             st.plotly_chart(fig_tool, use_container_width=True)
@@ -572,10 +639,13 @@ with tab3:
             )
             fig_reject.update_traces(textposition="outside", textfont_color="#CBD5E1")
             fig_reject.update_layout(
-                **CHART_LAYOUT, height=360,
+                **CHART_LAYOUT, height=420,
                 coloraxis_showscale=False,
                 xaxis=dict(tickangle=-35, title="Tool"),
-                yaxis=dict(title="Rejection Rate (%)"),
+                yaxis=dict(
+                    title="Rejection Rate (%)",
+                    range=[0, sorted_tool["rejection_rate"].max() * 1.35],
+                ),
                 title=dict(text="Developer Rejection Rate", font=dict(color="#CBD5E1", size=13)),
             )
             st.plotly_chart(fig_reject, use_container_width=True)
@@ -702,17 +772,88 @@ with tab4:
         if flagged_df.empty:
             st.success("No anomalies detected in the selected date range.")
         else:
-            display_flagged = flagged_df.copy()
-            display_flagged["daily_cost"]    = display_flagged["daily_cost"].apply(lambda x: f"${x:,.4f}")
-            display_flagged["anomaly_score"] = display_flagged["anomaly_score"].apply(lambda x: f"{x:.4f}")
-            display_flagged.columns = [
-                "Email", "Name", "Practice", "Level", "Location",
-                "Date", "Daily Cost", "Sessions", "API Calls", "Anomaly Score",
-            ]
-            st.dataframe(display_flagged, use_container_width=True, hide_index=True)
+            anomaly_rows_html = ""
+            for i, row in enumerate(flagged_df.itertuples(index=False)):
+                score = float(row[9])
+                if score < -0.15:
+                    row_bg    = "rgba(239,68,68,0.14)"
+                    score_col = "#FCA5A5"
+                    badge_bg  = "#7F1D1D"
+                    badge_txt = "#FCA5A5"
+                    badge_lbl = "🔴 High"
+                elif score < -0.05:
+                    row_bg    = "rgba(245,158,11,0.12)"
+                    score_col = "#FCD34D"
+                    badge_bg  = "#78350F"
+                    badge_txt = "#FCD34D"
+                    badge_lbl = "🟠 Medium"
+                else:
+                    row_bg    = "rgba(124,58,237,0.10)"
+                    score_col = "#C4B5FD"
+                    badge_bg  = "#2E1065"
+                    badge_txt = "#C4B5FD"
+                    badge_lbl = "🟣 Low"
+
+                practice = str(row[2])
+                PRACTICE_BADGE = {
+                    "ML Engineering":       "#7C3AED",
+                    "Frontend Engineering": "#0891B2",
+                    "Backend Engineering":  "#059669",
+                    "DevOps":               "#D97706",
+                    "Platform Engineering": "#E11D48",
+                    "Data Engineering":     "#EA580C",
+                }
+                p_col = PRACTICE_BADGE.get(practice, "#475569")
+
+                anomaly_rows_html += f"""
+                <tr style="background:{row_bg};">
+                    <td style="color:#94A3B8; font-size:0.72rem; padding:8px 10px;">{row[0]}</td>
+                    <td style="color:#F1F5F9; font-weight:600; padding:8px 10px;">{row[1]}</td>
+                    <td style="padding:8px 10px;">
+                        <span style="background:{p_col}22; color:{p_col};
+                                     border:1px solid {p_col}55; border-radius:20px;
+                                     padding:2px 8px; font-size:0.7rem; font-weight:600;">
+                            {practice}
+                        </span>
+                    </td>
+                    <td style="color:#CBD5E1; font-size:0.78rem; padding:8px 10px;">{row[3]}</td>
+                    <td style="color:#94A3B8; font-size:0.75rem; padding:8px 10px;">{row[5]}</td>
+                    <td style="color:#34D399; font-weight:700; padding:8px 10px;">${float(row[6]):,.4f}</td>
+                    <td style="color:#A5B4FC; padding:8px 10px;">{int(row[7]):,}</td>
+                    <td style="color:#A5B4FC; padding:8px 10px;">{int(row[8]):,}</td>
+                    <td style="padding:8px 10px;">
+                        <span style="background:{badge_bg}; color:{badge_txt};
+                                     border-radius:20px; padding:3px 10px;
+                                     font-size:0.72rem; font-weight:700;">
+                            {badge_lbl}
+                        </span>
+                        <span style="color:{score_col}; font-size:0.75rem; margin-left:6px;">{score:.4f}</span>
+                    </td>
+                </tr>"""
+
+            st.markdown(f"""
+            <div style="max-height:420px; overflow-y:auto; overflow-x:auto; border-radius:12px; border:1px solid rgba(239,68,68,0.25);">
+
+            <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
+                <thead>
+                    <tr>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Email</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Name</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Practice</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Level</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Date</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Daily Cost</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Sessions</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">API Calls</th>
+                        <th style="padding:11px 10px; text-align:left; position:sticky; top:0; background:linear-gradient(90deg,#7F1D1D,#2E1065); color:#FCA5A5; font-size:0.72rem; text-transform:uppercase; letter-spacing:.06em; z-index:2;">Severity</th>
+                    </tr>
+                </thead>
+                <tbody>{anomaly_rows_html}</tbody>
+            </table>
+            </div>
+            """, unsafe_allow_html=True)
             st.markdown(
-                '<p class="section-caption">Anomaly Score: more negative = more anomalous. '
-                'Sorted by daily cost descending.</p>',
+                '<p class="section-caption">Anomaly Score: more negative = more anomalous.</p>',
                 unsafe_allow_html=True,
             )
 
@@ -739,10 +880,13 @@ with tab5:
             )
             fig_session.update_traces(textposition="outside", textfont_color="#CBD5E1")
             fig_session.update_layout(
-                **CHART_LAYOUT, height=360,
+                **CHART_LAYOUT, height=420,
                 coloraxis_showscale=False,
-                xaxis=dict(tickangle=-20, title="Engineering Practice"),
-                yaxis=dict(title="Avg API Calls / Session"),
+                xaxis=dict(tickangle=-30, title="Engineering Practice"),
+                yaxis=dict(
+                    title="Avg API Calls / Session",
+                    range=[0, session_df["avg_calls_per_session"].max() * 1.3],
+                ),
             )
             st.plotly_chart(fig_session, use_container_width=True)
             st.markdown(
@@ -840,8 +984,8 @@ with tab5:
                 color_discrete_sequence=["#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#F43F5E"],
             )
             fig_model_prac.update_layout(
-                **CHART_LAYOUT, height=360,
-                xaxis=dict(tickangle=-20, title="Engineering Practice"),
+                **CHART_LAYOUT, height=420,
+                xaxis=dict(tickangle=-35, title="", tickfont=dict(size=10)),
                 yaxis=dict(title="API Calls"),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02,
                             bgcolor="rgba(0,0,0,0)", font=dict(color="#CBD5E1", size=10)),
@@ -869,9 +1013,12 @@ with tab5:
             )
             fig_eff.update_traces(textposition="outside", textfont_color="#CBD5E1")
             fig_eff.update_layout(
-                **CHART_LAYOUT, height=420,
+                **CHART_LAYOUT, height=460,
                 coloraxis_showscale=False,
                 yaxis=dict(categoryorder="total ascending", title=""),
-                xaxis=dict(title="Output Tokens / Dollar"),
+                xaxis=dict(
+                    title="Output Tokens / Dollar",
+                    range=[0, efficiency_df["efficiency_score"].max() * 1.3],
+                ),
             )
             st.plotly_chart(fig_eff, use_container_width=True)
